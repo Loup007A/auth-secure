@@ -77,5 +77,20 @@ def dashboard():
         return redirect(url_for("home"))
     return render_template("dashboard.html")
 
+# 📌 Route pour récupérer l'utilisateur connecté
+@app.route("/session", methods=["GET"])
+def session_info():
+    if "user_id" in session:
+        conn = sqlite3.connect("database/users.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT username FROM users WHERE id = ?", (session["user_id"],))
+        user = cursor.fetchone()
+        conn.close()
+
+        if user:
+            return jsonify({"username": user[0]})
+    return jsonify({"error": "Non connecté"}), 401
+
+
 if __name__ == "__main__":
     app.run(debug=True)
