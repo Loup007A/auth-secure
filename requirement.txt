@@ -3,3 +3,4 @@ cryptography==3.4.7
 pyjwt==2.1.0
 sqlite3
 werkzeug
+gunicorn
