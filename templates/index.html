@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth-Secure | Inscription & Utilisateurs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px gray;
+            display: inline-block;
+            text-align: left;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #218838;
+        }
+        table {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔐 Inscription et Liste des Utilisateurs</h1>
+
+    <!-- Formulaire d'inscription -->
+    <form id="registerForm">
+        <label for="username">Nom d'utilisateur :</label>
+        <input type="text" id="username" required>
+        
+        <label for="password">Mot de passe :</label>
+        <input type="password" id="password" required>
+        
+        <button type="submit">S'inscrire</button>
+    </form>
+
+    <p id="message" class="error"></p>
+
+    <!-- Liste des utilisateurs -->
+    <h2>👥 Utilisateurs enregistrés</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom d'utilisateur</th>
+            </tr>
+        </thead>
+        <tbody id="userList">
+            <!-- Les utilisateurs seront affichés ici -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fonction pour s'inscrire
+        document.getElementById("registerForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            
+            fetch("http://127.0.0.1:5000/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ username: username, password: password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    document.getElementById("message").style.color = "green";
+                    document.getElementById("message").textContent = data.message;
+                    document.getElementById("registerForm").reset();
+                    loadUsers();
+                } else {
+                    document.getElementById("message").style.color = "red";
+                    document.getElementById("message").textContent = data.error;
+                }
+            })
+            .catch(error => console.error("Erreur:", error));
+        });
+
+        // Fonction pour charger la liste des utilisateurs
+        function loadUsers() {
+            fetch("http://127.0.0.1:5000/users")
+            .then(response => response.json())
+            .then(users => {
+                const userList = document.getElementById("userList");
+                userList.innerHTML = "";
+                users.forEach(user => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${user.id}</td><td>${user.username}</td>`;
+                    userList.appendChild(row);
+                });
+            })
+            .catch(error => console.error("Erreur:", error));
+        }
+
+        // Charger les utilisateurs au démarrage
+        loadUsers();
+    </script>
+
+</body>
+</html>
