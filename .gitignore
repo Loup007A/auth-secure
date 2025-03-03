@@ -1,0 +1,13 @@
+# Environnement Python
+__pycache__/
+*.pyc
+*.pyo
+env/
+venv/
+
+# Clés privées (!!!)
+keys/private_key.pem
+
+# Base de données locale
+*.sqlite
+*.db
