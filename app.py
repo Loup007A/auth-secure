@@ -1,27 +1,28 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import sqlite3
-import jwt
-import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
+from flask_session import Session
 
 app = Flask(__name__)
-SECRET_KEY = "supersecretkey"
 
-# Charger les clés RSA
-with open("keys/private_key.pem", "rb") as f:
-    PRIVATE_KEY = load_pem_private_key(f.read(), password=None)
-with open("keys/public_key.pem", "rb") as f:
-    PUBLIC_KEY = load_pem_public_key(f.read())
+# Configuration de la session Flask
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
 
-# Route d'inscription
+# 📌 Route pour afficher la page principale (inscription & connexion)
+@app.route("/")
+def home():
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+    return render_template("index.html")
+
+# 📌 Route pour inscrire un utilisateur
 @app.route("/register", methods=["POST"])
 def register():
     data = request.json
     username = data["username"]
-    password = generate_password_hash(data["password"])
+    password = generate_password_hash(data["password"])  # Hachage du mot de passe
 
     conn = sqlite3.connect("database/users.db")
     cursor = conn.cursor()
@@ -35,7 +36,17 @@ def register():
     finally:
         conn.close()
 
-# Route de connexion
+# 📌 Route pour récupérer la liste des utilisateurs
+@app.route("/users", methods=["GET"])
+def get_users():
+    conn = sqlite3.connect("database/users.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username FROM users")
+    users = [{"id": row[0], "username": row[1]} for row in cursor.fetchall()]
+    conn.close()
+    return jsonify(users)
+
+# 📌 Route pour se connecter
 @app.route("/login", methods=["POST"])
 def login():
     data = request.json
@@ -44,23 +55,27 @@ def login():
 
     conn = sqlite3.connect("database/users.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT password_hash FROM users WHERE username = ?", (username,))
+    cursor.execute("SELECT id, password_hash FROM users WHERE username = ?", (username,))
     user = cursor.fetchone()
     conn.close()
 
-    if user and check_password_hash(user[0], password):
-        token = jwt.encode({"user": username, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)},
-                           SECRET_KEY, algorithm="HS256")
-        return jsonify({"token": token}), 200
+    if user and check_password_hash(user[1], password):
+        session["user_id"] = user[0]  # Stocker l'ID utilisateur dans la session
+        return jsonify({"message": "Connexion réussie !"}), 200
     return jsonify({"error": "Identifiants incorrects"}), 401
 
-# Route pour obtenir la clé publique
-@app.route("/get_public_key", methods=["GET"])
-def get_public_key():
-    return jsonify({"public_key": PUBLIC_KEY.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    ).decode("utf-8")})
+# 📌 Route pour se déconnecter
+@app.route("/logout")
+def logout():
+    session.pop("user_id", None)
+    return redirect(url_for("home"))
+
+# 📌 Route du tableau de bord après connexion
+@app.route("/dashboard")
+def dashboard():
+    if "user_id" not in session:
+        return redirect(url_for("home"))
+    return render_template("dashboard.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
