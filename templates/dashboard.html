@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Auth-Secure</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px gray;
+            display: inline-block;
+            text-align: left;
+            min-width: 300px;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        table {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔐 Tableau de Bord</h1>
+    <div class="container">
+        <h2>Bienvenue, <span id="username">Utilisateur</span> 👋</h2>
+        <button onclick="logout()">Se déconnecter</button>
+    </div>
+
+    <h2>👥 Liste des Utilisateurs</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom d'utilisateur</th>
+            </tr>
+        </thead>
+        <tbody id="userList">
+            <!-- Les utilisateurs seront affichés ici -->
+        </tbody>
+    </table>
+
+    <script>
+        // Récupérer le nom d'utilisateur connecté
+        function getUserInfo() {
+            fetch("http://127.0.0.1:5000/session")
+            .then(response => response.json())
+            .then(data => {
+                if (data.username) {
+                    document.getElementById("username").textContent = data.username;
+                    loadUsers();
+                } else {
+                    window.location.href = "/";
+                }
+            })
+            .catch(error => console.error("Erreur:", error));
+        }
+
+        // Fonction pour charger la liste des utilisateurs
+        function loadUsers() {
+            fetch("http://127.0.0.1:5000/users")
+            .then(response => response.json())
+            .then(users => {
+                const userList = document.getElementById("userList");
+                userList.innerHTML = "";
+                users.forEach(user => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${user.id}</td><td>${user.username}</td>`;
+                    userList.appendChild(row);
+                });
+            })
+            .catch(error => console.error("Erreur:", error));
+        }
+
+        // Fonction pour se déconnecter
+        function logout() {
+            fetch("http://127.0.0.1:5000/logout")
+            .then(() => {
+                window.location.href = "/";
+            })
+            .catch(error => console.error("Erreur:", error));
+        }
+
+        // Charger les informations de l'utilisateur et les utilisateurs
+        getUserInfo();
+    </script>
+
+</body>
+</html>
